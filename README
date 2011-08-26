@@ -1,0 +1,23 @@
+ImportPagesCSV
+==============
+
+This is a ProcessWire 2.1 module that allows you to import CSV files to create pages. 
+
+
+INSTALL
+=======
+
+1. Place the file ImportPagesCSV.module in your /site/modules/ directory. 
+
+2. In ProcessWire admin, click to 'Modules' and 'Check for new modules'. 
+
+3. Click 'install next to the 'Import Pages CSV' module (under heading 'Import'). 
+
+
+SUPPORT
+=======
+
+Visit the ProcessWire form at http://processwire.com/talk/
+
+Copyright 2011 by Ryan Cramer for ProcessWire 2.1
+
