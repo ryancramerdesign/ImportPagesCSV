@@ -516,6 +516,7 @@ class ImportPagesCSV extends Process implements Module {
 			$page->parent = $parent; 
 			$page->template = $this->templates->get('admin');
 			$page->name = self::adminPageName; 
+			$page->title = "Import Pages From CSV";
 			$page->process = $this; 
 			$page->sort = $parent->numChildren;
 			$page->save();
