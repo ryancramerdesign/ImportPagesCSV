@@ -11,6 +11,11 @@
  * http://www.processwire.com
  * http://www.ryancramer.com
  *
+ * Version 1.0.1, September 7
+ * 	Added support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
+ *	or the URL to the file you want to import. For fields that support multiple files, place each filename
+ * 	or URL on it's own line, OR separate them by | (pipe) OR tab ... whatever you prefer.
+ *
  */
 
 class ImportPagesCSV extends Process implements Module {
@@ -24,7 +29,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 100, 
+			'version' => 101, 
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -77,6 +82,7 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeEmail',
 		'FieldtypeURL',
 		'FieldtypeCheckbox',
+		'FieldtypeFile',
 		);
 
 	/**
@@ -301,12 +307,14 @@ class ImportPagesCSV extends Process implements Module {
 
 			foreach($this->template->fieldgroup as $field) {
 				$valid = false;
+
 				foreach($this->fieldtypes as $ft) {
 					if($field->type instanceof $ft) {
 						$valid = true;
 						break;
 					}
 				}
+
 				if(!$valid) continue; 
 				$label = $field->name; 
 				$f->addOption($field->name, $label); 
@@ -371,7 +379,7 @@ class ImportPagesCSV extends Process implements Module {
 		$page = new Page();
 		$page->parent = $this->parent; 
 		$page->template = $this->template; 
-		$pageName = '';
+		$page->ImportPagesCSVData = array(); // data to set after page is saved
 		$fieldNames = array();
 
 		foreach($form as $f) {
@@ -380,35 +388,65 @@ class ImportPagesCSV extends Process implements Module {
 			$value = $data[$key]; 
 			$name = $f->value; 
 			if(!$name) continue; 
-			$page->set($name, $value); 
-			if($name == 'title') $pageName = $this->sanitizer->pageName($value); 
+			$this->importPageValue($page, $name, $value); 
 			$fieldNames[] = $name; 
 		}	
 
-		if(!$pageName) {
+		if(!$page->name) {
 			$this->error("Unable to import page because it has no required 'title' field or it is blank."); 
 			return false;
 		}
 
-		$page->name = $pageName; 
-		$success = true; 
+		$page = $this->savePage($page, false);
 
-		if(!$this->savePage($page, false)) { 
+		if(!$page->id) { 
 
 			if($this->session->csvDuplicate == self::csvDuplicateNew) {
 				$page->name = $this->getUniquePageName($pageName); 
-				$success = $this->savePage($page);
+				$page = $this->savePage($page);
 
 			} else if($this->session->csvDuplicate == self::csvDuplicateModify) { 
-				$success = $this->modifyPage($page, $fieldNames); 
+				$page = $this->modifyPage($page, $fieldNames); 
 				
 			} else {
 				$this->message("Skipping row with duplicate name '$pageName'"); 
-				$success = false;
 			}
 		}
 
-		return $success; 
+		// import post-save data, like files
+		if($page->id && count($page->ImportPagesCSVData)) {
+			foreach($page->ImportPagesCSVData as $name => $value) {
+				$page->set($name, $value);
+			}
+			$page->save();
+		}
+
+		return $page->id > 0; 
+	}
+
+	/**
+	 * Assign a value to a page field 
+	 *
+	 */
+	protected function importPageValue(Page $page, $name, $value) {
+
+		$field = $this->fields->get($name); 
+
+		if($field->type instanceof FieldtypeFile) {
+
+			$value = trim($value); 
+			// split delimeted data to an array
+			$value = preg_split('/[\r\n\t|]+/', $value); 
+			if($field->maxFiles == 1) $value = array_shift($value);
+			$data = $page->ImportPagesCSVData; 
+			$data[$name] = $value; 
+			$page->ImportPagesCSVData = $data; 
+
+		} else { 
+
+			$page->set($name, $value); 
+			if($name == 'title') $page->name = $this->sanitizer->pageName($value); 
+		}
 	}
 
 	/**
@@ -431,10 +469,16 @@ class ImportPagesCSV extends Process implements Module {
 		}
 
 		foreach($fieldNames as $fieldName) {
-			$p->set($fieldName, $page->get($fieldName)); 
+			if(isset($page->ImportPagesCSVData[$fieldName])) {
+				$value = $page->ImportPagesCSVData[$fieldName]; 
+			} else {
+				$value = $page->get($fieldName); 
+			}
+				
+			$p->set($fieldName, $value); 
 		}
 
-		return $this->savePage($p); 
+		return $this->savePage($p);
 	}
 
 	/**
@@ -443,8 +487,6 @@ class ImportPagesCSV extends Process implements Module {
 	 */
 	protected function savePage(Page $page, $reportErrors = true) {
 
-		$success = true;
-
 		try {
 			$label = $page->id ? "Modified" : "Created"; 
 			$page->save(); 
@@ -452,10 +494,9 @@ class ImportPagesCSV extends Process implements Module {
 
 		} catch(Exception $e) {
 			if($reportErrors) $this->error($e->getMessage()); 
-			$success = false;
 		}
 
-		return $success; 
+		return $page; 
 	}
 
 	/**

@@ -14,6 +14,16 @@ INSTALL
 3. Click 'install next to the 'Import Pages CSV' module (under heading 'Import'). 
 
 
+CHANGELOG
+=========
+
+Version 1.0.1, September 7, 2011
+--------------------------------
+Added support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
+or the URL to the file you want to import. For fields that support multiple files, place each filename
+or URL on it's own line, OR separate them by | (pipe) OR tab ... whatever you prefer.
+
+
 SUPPORT
 =======
 
