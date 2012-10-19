@@ -29,7 +29,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 101, 
+			'version' => 103, 
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -167,7 +167,7 @@ class ImportPagesCSV extends Process implements Module {
 		$f->maxFiles = 1; 
 		$f->descriptionRows = 0; 
 		$f->overwrite = true; 
-		$f->required = true; 
+		$f->required = false; 
 		$f->description = 
 			"The list of field names must be provided as the first row in the CSV file. " . 
 			"UTF-8 compatible encoding is assumed. File must have the extension '.csv' or '.txt'. " . 
@@ -445,7 +445,7 @@ class ImportPagesCSV extends Process implements Module {
 		} else { 
 
 			$page->set($name, $value); 
-			if($name == 'title') $page->name = $this->sanitizer->pageName($value); 
+			if($name == 'title') $page->name = $this->sanitizer->pageName($value, 2); // Sanitizer::translate
 		}
 	}
 
