@@ -261,7 +261,7 @@ class ImportPagesCSV extends Process implements Module {
 			$csvFilename = $csvFile->filename; 
 
 		} else if(strlen($csvData)) {
-			$csvFilename = $this->config->paths->files . $this->page->id . '/data.csv'; 
+			$csvFilename = $this->config->paths->files . ($this->config->pagefileSecure ? $this->config->pagefileSecurePathPrefix : null) . $this->page->id . '/data.csv'; 
 			file_put_contents($csvFilename, $form->get('csv_data')->value); 
 
 		} else {
