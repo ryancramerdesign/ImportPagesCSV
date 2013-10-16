@@ -29,7 +29,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 103, 
+			'version' => 104, 
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -261,7 +261,7 @@ class ImportPagesCSV extends Process implements Module {
 			$csvFilename = $csvFile->filename; 
 
 		} else if(strlen($csvData)) {
-			$csvFilename = $this->config->paths->files . $this->page->id . '/data.csv'; 
+			$csvFilename = $this->page->filesManager()->path() . 'data.csv'; 
 			file_put_contents($csvFilename, $form->get('csv_data')->value); 
 
 		} else {
@@ -402,14 +402,14 @@ class ImportPagesCSV extends Process implements Module {
 		if(!$page->id) { 
 
 			if($this->session->csvDuplicate == self::csvDuplicateNew) {
-				$page->name = $this->getUniquePageName($pageName); 
+				$page->name = $this->getUniquePageName($page->name); 
 				$page = $this->savePage($page);
 
 			} else if($this->session->csvDuplicate == self::csvDuplicateModify) { 
 				$page = $this->modifyPage($page, $fieldNames); 
 				
 			} else {
-				$this->message("Skipping row with duplicate name '$pageName'"); 
+				$this->message("Skipping row with duplicate name '$page->name'"); 
 			}
 		}
 
