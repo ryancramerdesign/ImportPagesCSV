@@ -2,14 +2,13 @@
 
 /**
  * ProcessWire Process module to import pages from a CSV file.
- * For ProcessWire 2.1
+ * For ProcessWire 2.1 or newer
  *
  * ProcessWire 2.x 
- * Copyright (C) 2011 by Ryan Cramer 
+ * Copyright (C) 2015 by Ryan Cramer 
  * Licensed under GNU/GPL v2, see LICENSE.TXT
  * 
- * http://www.processwire.com
- * http://www.ryancramer.com
+ * http://processwire.com
  *
  * Version 1.0.1, September 7
  * 	Added support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
@@ -29,7 +28,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 104, 
+			'version' => 105, 
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -83,6 +82,7 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeURL',
 		'FieldtypeCheckbox',
 		'FieldtypeFile',
+		'FieldtypePage', 
 		);
 
 	/**

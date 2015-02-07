@@ -1,7 +1,7 @@
 ImportPagesCSV
 ==============
 
-This is a ProcessWire 2.1 module that allows you to import CSV files to create pages. 
+This is a ProcessWire module that allows you to import CSV files to create pages. 
 
 
 INSTALL
@@ -14,14 +14,17 @@ INSTALL
 3. Click 'install next to the 'Import Pages CSV' module (under heading 'Import'). 
 
 
-CHANGELOG
-=========
-
-Version 1.0.1, September 7, 2011
---------------------------------
-Added support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
+Importing file fields
+---------------------
+There is support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
 or the URL to the file you want to import. For fields that support multiple files, place each filename
 or URL on it's own line, OR separate them by | (pipe) OR tab ... whatever you prefer.
+
+Importing page fields (requires ProcessWire 2.5.17+)
+----------------------------------------------------
+For single-value page fields the CSV imported value can be the page id, path, title, or name.
+For multi-value page fields, the value can be the same but multiple-values should be separated by 
+either a newline in the column, or a pipe "|" character. 
 
 
 SUPPORT
@@ -29,5 +32,5 @@ SUPPORT
 
 Visit the ProcessWire form at http://processwire.com/talk/
 
-Copyright 2011 by Ryan Cramer for ProcessWire 2.1
+Copyright 2011-2015 by Ryan Cramer for ProcessWire
 
