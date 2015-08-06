@@ -28,7 +28,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 105, 
+			'version' => 106, 
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -83,6 +83,7 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeCheckbox',
 		'FieldtypeFile',
 		'FieldtypePage', 
+		'FieldtypeOptions', 
 		);
 
 	/**
