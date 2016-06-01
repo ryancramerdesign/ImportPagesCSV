@@ -28,7 +28,7 @@ class ImportPagesCSV extends Process implements Module {
 	public static function getModuleInfo() {
 		return array(
 			'title' => 'Import Pages from CSV', 
-			'version' => 105, 
+			'version' => 105,
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'singular' => true, 
 			'autoload' => false, 
@@ -222,7 +222,16 @@ class ImportPagesCSV extends Process implements Module {
 		if(!$f->value) $f->collapsed = Inputfield::collapsedYes;
 		$fieldset->add($f); 
 
-		$f = $this->modules->get("InputfieldTextarea"); 
+		$f = $this->modules->get("InputfieldCheckboxes");
+		$f->name = 'csv_decode_mysql_string_literals';
+		$f->label = 'Decode MySQL string literals';
+		$f->description = "Does the CSV file contain string literals like '\\N' as they are used in MySQL?";
+		$f->addOption(true, 'Decode MySQL string literals');
+		$f->attr('value', $this->session->csvDecodeMySQLStringLiterals);
+		if($f->value[0]) $f->collapsed = Inputfield::collapsedNo;
+		$fieldset->add($f);
+
+		$f = $this->modules->get("InputfieldTextarea");
 		$f->name = 'csv_data';
 		$f->label = 'Paste in CSV Data';
 		$f->description = 
@@ -251,6 +260,7 @@ class ImportPagesCSV extends Process implements Module {
 		$this->session->csvEnclosure = substr($form->get('csv_enclosure')->value, 0, 1); 
 		$this->session->csvDuplicate = (int) $form->get('csv_duplicate')->value;
 		$this->session->csvMaxRows = (int) $form->get('csv_max_rows')->value; 
+		$this->session->csvDecodeMySQLStringLiterals = (int) $form->get('csv_decode_mysql_string_literals')->value;
 
 		$csvFile = $form->get('csv_file')->value; 
 		$csvData = $form->get('csv_data')->value; 
@@ -442,11 +452,31 @@ class ImportPagesCSV extends Process implements Module {
 			$data[$name] = $value; 
 			$page->ImportPagesCSVData = $data; 
 
-		} else { 
-
+		} else {
+			if ($this->session->csvDecodeMySQLStringLiterals) {
+				$value = $this->decodeMySQLStringLiterals($value);
+			}
 			$page->set($name, $value); 
 			if($name == 'title') $page->name = $this->sanitizer->pageName($value, 2); // Sanitizer::translate
 		}
+	}
+
+	/**
+	 * Decode MySQL string literals.
+	 *
+	 * @see https://dev.mysql.com/doc/refman/5.7/en/string-literals.html
+	 * @param $value string
+	 * @return string
+	 */
+	protected function decodeMySQLStringLiterals($value)
+	{
+		return strtr($value, array(
+			'\N' => null,
+			'\n' => "\n",
+			'\r' => "\r",
+			'\t' => "\t",
+			'\\' => ''
+		));
 	}
 
 	/**
