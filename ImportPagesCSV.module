@@ -82,7 +82,8 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeURL',
 		'FieldtypeCheckbox',
 		'FieldtypeFile',
-		'FieldtypePage', 
+		'FieldtypePage',
+		'FieldtypeMulti',
 		);
 
 	/**
@@ -319,13 +320,14 @@ class ImportPagesCSV extends Process implements Module {
 				$valid = false;
 
 				foreach($this->fieldtypes as $ft) {
-					if($field->type instanceof $ft) {
+					$ftns = "\\ProcessWire\\$ft";
+					if($field->type instanceof $ft || $field->type instanceof $ftns) {
 						$valid = true;
 						break;
 					}
 				}
 
-				if(!$valid) continue; 
+				if(!$valid) continue;
 				$label = $field->name; 
 				$f->addOption($field->name, $label); 
 				if($field->name == $value) $f->attr('value', $field->name); 
@@ -440,23 +442,31 @@ class ImportPagesCSV extends Process implements Module {
 	 */
 	protected function importPageValue(Page $page, $name, $value) {
 
-		$field = $this->fields->get($name); 
+		$field = $this->fields->get($name);
+
+		if($this->session->csvDecodeMySQLStringLiterals) {
+			$value = $this->decodeMySQLStringLiterals($value);
+		}
 
 		if($field->type instanceof FieldtypeFile) {
 
-			$value = trim($value); 
-			// split delimeted data to an array
-			$value = preg_split('/[\r\n\t|]+/', $value); 
-			if($field->maxFiles == 1) $value = array_shift($value);
-			$data = $page->ImportPagesCSVData; 
-			$data[$name] = $value; 
-			$page->ImportPagesCSVData = $data; 
+			$value = trim($value);
+			// split delimited data to an array
+			$value = preg_split('/[\r\n\t|]+/', $value);
+			if ($field->maxFiles == 1) $value = array_shift($value);
+			$data = $page->ImportPagesCSVData;
+			$data[$name] = $value;
+			$page->ImportPagesCSVData = $data;
+
+		} else if($field->type instanceof FieldtypeMulti) {
+			$value = trim($value);
+			// Multiple option values may be separated by any combination of
+			// carriage returns, line feeds, tabulators or vertical bars.
+			$value = preg_split('/[\r\n\t|]+/', $value);
+			$page->set($name, $value);
 
 		} else {
-			if ($this->session->csvDecodeMySQLStringLiterals) {
-				$value = $this->decodeMySQLStringLiterals($value);
-			}
-			$page->set($name, $value); 
+			$page->set($name, $value);
 			if($name == 'title') $page->name = $this->sanitizer->pageName($value, 2); // Sanitizer::translate
 		}
 	}
