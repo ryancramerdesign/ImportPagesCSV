@@ -369,7 +369,7 @@ class ImportPagesCSV extends Process implements Module {
 
 		fclose($fp); 
 		unlink($this->csvFilename); 
-		return $this->processForm2Markup($numImported); 
+		return $this->processForm2Markup($numImported - 1);
 	}
 
 	/**
