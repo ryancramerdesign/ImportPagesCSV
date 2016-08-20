@@ -83,6 +83,7 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeCheckbox',
 		'FieldtypeFile',
 		'FieldtypePage', 
+		'FieldtypeOptions', 
 		);
 
 	/**
