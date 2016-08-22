@@ -185,8 +185,19 @@ class ImportPagesCSV extends Process implements Module {
 		$f->label = 'Fields delimited by';
 		$f->addOption(1, 'Commas'); 
 		$f->addOption(2, 'Tabs'); 
-		if($this->session->csvDelimeter) $f->attr('value', $this->session->csvDelimeter === "\t" ? 2 : 1); 
-			else $f->attr('value', 1); 
+		$f->addOption(3, 'Semicolon');
+		if($this->session->csvDelimeter){
+			switch ($this->session->csvDelimeter) {
+				case "\t":
+					$f->attr('value',  2);
+					break;
+				case ";":
+					$f->attr('value',  3);
+					break;
+				default:
+					$f->attr('value', 1); 
+			}
+		}
 		$fieldset->add($f);
 
 		$f = $this->modules->get("InputfieldRadios"); 
@@ -246,8 +257,17 @@ class ImportPagesCSV extends Process implements Module {
 		if(count($form->getErrors())) return false;
 
 		$this->session->csvTemplate = (int) $form->get('template')->value;
-		$this->session->csvParent = (int) $form->get('parent_id')->value; 
-		$this->session->csvDelimeter = $form->get('csv_delimeter')->value == 2 ? "\t" : ",";
+		$this->session->csvParent = (int) $form->get('parent_id')->value;
+		switch ($form->get('csv_delimeter')->value) {
+			case 3:
+				$this->session->csvDelimeter = ";";
+				break;
+			case 2:
+				$this->session->csvDelimeter = "\t";
+				break;
+			default:
+				$this->session->csvDelimeter = ","; 
+		}
 		$this->session->csvEnclosure = substr($form->get('csv_enclosure')->value, 0, 1); 
 		$this->session->csvDuplicate = (int) $form->get('csv_duplicate')->value;
 		$this->session->csvMaxRows = (int) $form->get('csv_max_rows')->value; 
