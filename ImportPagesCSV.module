@@ -318,6 +318,7 @@ class ImportPagesCSV extends Process implements Module {
 				if(!$valid) continue; 
 				$label = $field->name; 
 				$f->addOption($field->name, $label); 
+				$f->addOption('name');
 				if($field->name == $value) $f->attr('value', $field->name); 
 			}
 
