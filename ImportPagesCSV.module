@@ -10,11 +10,6 @@
  * 
  * http://processwire.com
  *
- * Version 1.0.1, September 7
- * 	Added support for FieldtypeFile (and FieldtypeImage). File field should contain full path and filename
- *	or the URL to the file you want to import. For fields that support multiple files, place each filename
- * 	or URL on it's own line, OR separate them by | (pipe) OR tab ... whatever you prefer.
- *
  */
 
 class ImportPagesCSV extends Process implements Module {
@@ -83,6 +78,7 @@ class ImportPagesCSV extends Process implements Module {
 		'FieldtypeCheckbox',
 		'FieldtypeFile',
 		'FieldtypePage', 
+		'FieldtypeMapMarker'
 		);
 
 	/**
@@ -322,6 +318,7 @@ class ImportPagesCSV extends Process implements Module {
 				if(!$valid) continue; 
 				$label = $field->name; 
 				$f->addOption($field->name, $label); 
+				$f->addOption('name');
 				if($field->name == $value) $f->attr('value', $field->name); 
 			}
 
@@ -361,7 +358,7 @@ class ImportPagesCSV extends Process implements Module {
 
 		fclose($fp); 
 		unlink($this->csvFilename); 
-		return $this->processForm2Markup($numImported); 
+		return $this->processForm2Markup($numImported-1); 
 	}
 
 	/**
@@ -445,6 +442,11 @@ class ImportPagesCSV extends Process implements Module {
 			$data = $page->ImportPagesCSVData; 
 			$data[$name] = $value; 
 			$page->ImportPagesCSVData = $data; 
+
+		} elseif($field->type instanceof FieldtypeMapMarker) {
+
+			$value = trim($value);
+			$page->$name->address = (string)$value;
 
 		} else { 
 
