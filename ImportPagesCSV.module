@@ -221,12 +221,12 @@ class ImportPagesCSV extends Process implements Module {
 
 		/** @var InputfieldRadios $f */
 		$f = $this->modules->get("InputfieldRadios");
-		$f->name = 'csv_delimeter';
+		$f->name = 'csv_delimiter';
 		$f->label = 'Fields delimited by';
 		$f->addOption(1, 'Commas');
 		$f->addOption(2, 'Tabs');
 		$f->addOption(3, 'Semicolons');
-		$value = $this->sessionGet('csvDelimeter');
+		$value = $this->sessionGet('csvDelimiter');
 		if(strlen($value)) {
 			$selectedOption = 1;
 			if ($value === "\t") $selectedOption = 2;
@@ -318,11 +318,11 @@ class ImportPagesCSV extends Process implements Module {
 		$this->sessionSet('csvTemplate', (int) $form->getChildByName('template')->value);
 		$this->sessionSet('csvParent', (int) $form->getChildByName('parent_id')->value);
 
-		$delimeter = ",";
-		if( $form->getChildByName('csv_delimeter')->value == 2) $delimeter = "\t";
-		if( $form->getChildByName('csv_delimeter')->value == 3) $delimeter = ";";
+		$delimiter = ",";
+		if( $form->getChildByName('csv_delimiter')->value == 2) $delimiter = "\t";
+		if( $form->getChildByName('csv_delimiter')->value == 3) $delimiter = ";";
 
-    	$this->sessionSet('csvDelimeter', $delimeter);
+    	$this->sessionSet('csvDelimiter', $delimiter);
 		$this->sessionSet('csvEnclosure', substr($form->getChildByName('csv_enclosure')->value, 0, 1));
 		$this->sessionSet('csvDuplicate', (int) $form->getChildByName('csv_duplicate')->value);
 		$this->sessionSet('csvMaxRows', (int) $form->getChildByName('csv_max_rows')->value);
@@ -381,7 +381,7 @@ class ImportPagesCSV extends Process implements Module {
 		$fp = fopen($this->csvFilename, "r");
 		if($fp === false) throw new WireException("Unable to open CSV file");
 
-		$data = fgetcsv($fp, 0, $this->sessionGet('csvDelimeter'), $this->sessionGet('csvEnclosure'));
+		$data = fgetcsv($fp, 0, $this->sessionGet('csvDelimiter'), $this->sessionGet('csvEnclosure'));
 
 		foreach($data as $key => $value) {
 
@@ -426,10 +426,10 @@ class ImportPagesCSV extends Process implements Module {
 		$numImported = 0;
 		$rowNum = 0;
 		$maxRows = $this->sessionGet('csvMaxRows');
-		$csvDelimeter = $this->sessionGet('csvDelimeter', ',');
+		$csvDelimiter = $this->sessionGet('csvDelimiter', ',');
 		$csvEnclosure = $this->sessionGet('csvEnclosure', '"');
 
-		while(($data = fgetcsv($fp, 0, $csvDelimeter, $csvEnclosure)) !== false) {
+		while(($data = fgetcsv($fp, 0, $csvDelimiter, $csvEnclosure)) !== false) {
 			$cnt = count($data);
 
 			// skip blank lines
