@@ -3,29 +3,29 @@
 /**
  * ProcessWire Process module to import pages from a CSV file.
  *
- * Copyright 2011-2020 by Ryan Cramer 
+ * Copyright 2011-2020 by Ryan Cramer
  * Licensed under MPL 2.0
- * 
+ *
  * https://processwire.com
  *
- * 
+ *
  * Importing file/image fields
  * ===========================
- * CSV column should contain full URL (or diskpath and filename) to the file you want to import. 
- * For fields that support multiple files, place each filename or URL on its own line, OR separate 
+ * CSV column should contain full URL (or diskpath and filename) to the file you want to import.
+ * For fields that support multiple files, place each filename or URL on its own line, OR separate
  * them by | (pipe) OR tab.
- * 
+ *
  * Importing page reference fields
  * ===============================
- * Please make sure that your Page reference field has one or more pages selected for the "Parent" 
+ * Please make sure that your Page reference field has one or more pages selected for the "Parent"
  * setting on the Details tab. If you want the import to be able to create paes, there must also
- * be a single Template selected on the "Template" setting. Column values for page references 
- * may be page IDs, Titles, or Names separated by newline or pipe "|". 
- * 
- * 
+ * be a single Template selected on the "Template" setting. Column values for page references
+ * may be page IDs, Titles, or Names separated by newline or pipe "|".
+ *
+ *
  * @method bool isAllowedField(Field $field)
  * @method bool importPageValue(Page $page, $name, $value)
- * 
+ *
  *
  */
 
@@ -39,8 +39,8 @@ class ImportPagesCSV extends Process implements Module {
 	 */
 	public static function getModuleInfo() {
 		return array(
-			'title' => 'Import Pages from CSV', 
-			'version' => 108, 
+			'title' => 'Import Pages from CSV',
+			'version' => 108,
 			'summary' => 'Import CSV files to create ProcessWire pages.',
 			'author' => 'Ryan Cramer',
 			'icon' => 'table',
@@ -57,9 +57,9 @@ class ImportPagesCSV extends Process implements Module {
 	 * Constants for the csvDuplicate session var
 	 *
 	 */
-	const csvDuplicateSkip = 0;	
-	const csvDuplicateNew = 1; 
-	const csvDuplicateModify = 2; 
+	const csvDuplicateSkip = 0;
+	const csvDuplicateNew = 1;
+	const csvDuplicateModify = 2;
 
 	/**
 	 * Filename with path to CSV file
@@ -69,7 +69,7 @@ class ImportPagesCSV extends Process implements Module {
 
 	/**
 	 * Instance of Template, used for imported pages
-	 * 
+	 *
 	 * @var Template|null
 	 *
 	 */
@@ -77,7 +77,7 @@ class ImportPagesCSV extends Process implements Module {
 
 	/**
 	 * Instance of Page, representing the parent Page for imported pages
-	 * 
+	 *
 	 * @var Page|null
 	 *
 	 */
@@ -117,9 +117,9 @@ class ImportPagesCSV extends Process implements Module {
 	 *
 	 */
 	public function ___execute() {
-		$form = $this->buildForm1(); 
+		$form = $this->buildForm1();
 		if($this->input->post('submit')) {
-			if($this->processForm1($form)) $this->session->redirect('./fields/'); 
+			if($this->processForm1($form)) $this->session->redirect('./fields/');
 		}
 		return $form->render();
 	}
@@ -130,104 +130,108 @@ class ImportPagesCSV extends Process implements Module {
 	 */
 	public function ___executeFields() {
 
-		$this->template = $this->templates->get($this->sessionGet('csvTemplate')); 
-		$this->parent = $this->pages->get($this->sessionGet('csvParent', new NullPage())); 
-		$this->csvFilename = $this->sessionGet('csvFilename'); 
+		$this->template = $this->templates->get($this->sessionGet('csvTemplate'));
+		$this->parent = $this->pages->get($this->sessionGet('csvParent', new NullPage()));
+		$this->csvFilename = $this->sessionGet('csvFilename');
 		$error = '';
 
 		if(!$this->template || !$this->parent->id || !$this->csvFilename) {
-			$error = "Missing required fields"; 
+			$error = "Missing required fields";
 		} else if(!$this->parent->editable()) {
 			$error = "Selected parent page is not editable";
-		}  
+		}
 
 		if($error) {
-			$this->error($error); 
+			$this->error($error);
 			$this->session->redirect("../");
 		}
-		$this->message("Using template: {$this->template}"); 
-		$this->message("Using parent: {$this->parent->path}"); 
+		$this->message("Using template: {$this->template}");
+		$this->message("Using parent: {$this->parent->path}");
 
-		$form = $this->buildForm2();	
+		$form = $this->buildForm2();
 
 		if($this->input->post('submit')) {
-			return $this->processForm2($form); 
-		} else { 
+			return $this->processForm2($form);
+		} else {
 			return $form->render();
 		}
 	}
 
 	/**
 	 * Build the "Step 1" form
-	 * 
+	 *
 	 * @return InputfieldForm
 	 *
 	 */
 	protected function buildForm1() {
 
 		/** @var InputfieldForm $form */
-		$form = $this->modules->get("InputfieldForm"); 
+		$form = $this->modules->get("InputfieldForm");
 		$form->description = "Step 1: Define source and destination";
 
 		/** @var InputfieldSelect $f */
-		$f = $this->modules->get("InputfieldSelect"); 	
+		$f = $this->modules->get("InputfieldSelect");
 		$f->name = 'template';
 		$f->label = 'Template';
 		$f->description = 'The pages you import will use the selected template.';
-		$f->required = true; 
+		$f->required = true;
 		$f->icon = 'cubes';
-		$f->addOption(''); 
+		$f->addOption('');
 		foreach($this->templates as $t) {
 			$f->addOption($t->id, $t->name);
 		}
 		$value = $this->sessionGet('csvTemplate');
 		if($value) $f->attr('value', $value);
-		$form->add($f); 	
+		$form->add($f);
 
 		/** @var InputfieldPageListSelect $f */
-		$f = $this->modules->get("InputfieldPageListSelect"); 
+		$f = $this->modules->get("InputfieldPageListSelect");
 		$f->name = 'parent_id';
 		$f->label = 'Parent Page';
 		$f->icon = 'sitemap';
-		$f->required = true; 
+		$f->required = true;
 		$f->description = "The pages you import will be given this parent.";
 		$value = $this->sessionGet('csvParent');
-		if($value) $f->attr('value', $value); 
-		$form->add($f); 
+		if($value) $f->attr('value', $value);
+		$form->add($f);
 
 		/** @var InputfieldFile $f */
-		$f = $this->modules->get("InputfieldFile"); 
+		$f = $this->modules->get("InputfieldFile");
 		$f->name = 'csv_file';
 		$f->label = 'CSV File';
 		$f->icon = 'file-text';
 		$f->extensions = 'csv txt';
-		$f->maxFiles = 1; 
-		$f->descriptionRows = 0; 
-		$f->overwrite = true; 
-		$f->required = false; 
-		$f->description = 
-			"The list of field names must be provided as the first row in the CSV file. " . 
-			"UTF-8 compatible encoding is assumed. File must have the extension '.csv' or '.txt'. " . 
+		$f->maxFiles = 1;
+		$f->descriptionRows = 0;
+		$f->overwrite = true;
+		$f->required = false;
+		$f->description =
+			"The list of field names must be provided as the first row in the CSV file. " .
+			"UTF-8 compatible encoding is assumed. File must have the extension '.csv' or '.txt'. " .
 			"If you prefer, you may instead paste in CSV data in the 'More Options' section below. ";
-		$form->add($f); 
+		$form->add($f);
 
 		/** @var InputfieldFieldset $fieldset */
-		$fieldset = $this->modules->get("InputfieldFieldset"); 
-		$fieldset->attr('id', 'csv_advanced_options'); 
+		$fieldset = $this->modules->get("InputfieldFieldset");
+		$fieldset->attr('id', 'csv_advanced_options');
 		$fieldset->label = "More Options";
-		$fieldset->collapsed = Inputfield::collapsedYes; 
+		$fieldset->collapsed = Inputfield::collapsedYes;
 		$fieldset->icon = 'sliders';
 		$form->add($fieldset);
-		
+
 		/** @var InputfieldRadios $f */
 		$f = $this->modules->get("InputfieldRadios");
-		$f->name = 'csv_delimeter';
+		$f->name = 'csv_delimiter';
 		$f->label = 'Fields delimited by';
 		$f->addOption(1, 'Commas');
 		$f->addOption(2, 'Tabs');
-		$value = $this->sessionGet('csvDelimeter');
+		$f->addOption(3, 'Semicolons');
+		$value = $this->sessionGet('csvDelimiter');
 		if(strlen($value)) {
-			$f->attr('value', $value === "\t" ? 2 : 1);
+			$selectedOption = 1;
+			if ($value === "\t") $selectedOption = 2;
+			if ($value === ";") $selectedOption = 3;
+			$f->attr('value', $selectedOption);
 		} else {
 			$f->attr('value', 1);
 		}
@@ -272,11 +276,11 @@ class ImportPagesCSV extends Process implements Module {
 		$f->label = 'Create new pages for Page references that do not exist?';
 		$f->description =
 			"When importing, if an existing Page for a FieldtypePage field cannot be found by title or name, " .
-			"it can optionally be created during import. This requires that the column being imported to the " . 
+			"it can optionally be created during import. This requires that the column being imported to the " .
 			"FieldtypePage field contains a title or name for the Page. It also requires that the FieldtypePage " .
-			"field is already configured to specify both the parent and template that it should use."; 
-		$f->notes = 
-			"Note that only the title and name properties are populated to created Page reference pages. " . 
+			"field is already configured to specify both the parent and template that it should use.";
+		$f->notes =
+			"Note that only the title and name properties are populated to created Page reference pages. " .
 			"If there are more properties you want to populate, create or import those pages ahead of time.";
 		$f->addOption(1, 'Yes, create new pages for Page references that do not already exist');
 		$f->addOption(0, 'No, do not create new pages for missing page references');
@@ -284,55 +288,60 @@ class ImportPagesCSV extends Process implements Module {
 		$fieldset->add($f);
 
 		/** @var InputfieldTextarea $f */
-		$f = $this->modules->get("InputfieldTextarea"); 
+		$f = $this->modules->get("InputfieldTextarea");
 		$f->name = 'csv_data';
 		$f->label = 'Paste in CSV Data';
 		$f->icon = 'code';
-		$f->description = 
-			"If you prefer, you may paste in the CSV data here rather than uploading a file above. " . 
+		$f->description =
+			"If you prefer, you may paste in the CSV data here rather than uploading a file above. " .
 			"You should use one or the other, but not both.";
-		$f->collapsed = Inputfield::collapsedBlank; 
-		$fieldset->add($f); 
+		$f->collapsed = Inputfield::collapsedBlank;
+		$fieldset->add($f);
 
-		$this->addSubmit($form, 'Continue to Step 2'); 
+		$this->addSubmit($form, 'Continue to Step 2');
 
-		return $form; 
+		return $form;
 	}
 
 	/**
 	 * Process the "Step 1" form and populate session variables with the results
-	 * 
+	 *
 	 * @param InputfieldForm $form
 	 * @return bool
 	 *
 	 */
 	protected function processForm1(InputfieldForm $form) {
 
-		$form->processInput($this->input->post); 
+		$form->processInput($this->input->post);
 		if(count($form->getErrors())) return false;
 
 		$this->sessionSet('csvTemplate', (int) $form->getChildByName('template')->value);
-		$this->sessionSet('csvParent', (int) $form->getChildByName('parent_id')->value); 
-		$this->sessionSet('csvDelimeter', $form->getChildByName('csv_delimeter')->value == 2 ? "\t" : ",");
-		$this->sessionSet('csvEnclosure', substr($form->getChildByName('csv_enclosure')->value, 0, 1)); 
+		$this->sessionSet('csvParent', (int) $form->getChildByName('parent_id')->value);
+
+		$delimiter = ",";
+		if( $form->getChildByName('csv_delimiter')->value == 2) $delimiter = "\t";
+		if( $form->getChildByName('csv_delimiter')->value == 3) $delimiter = ";";
+
+    	$this->sessionSet('csvDelimiter', $delimiter);
+		$this->sessionSet('csvEnclosure', substr($form->getChildByName('csv_enclosure')->value, 0, 1));
 		$this->sessionSet('csvDuplicate', (int) $form->getChildByName('csv_duplicate')->value);
 		$this->sessionSet('csvMaxRows', (int) $form->getChildByName('csv_max_rows')->value);
-		$this->sessionSet('csvAddPageRefs', (int) $form->getChildByName('csv_add_page_refs')->value); 
+		$this->sessionSet('csvAddPageRefs', (int) $form->getChildByName('csv_add_page_refs')->value);
 
 		/** @var Pagefiles|Pagefile $csvFile */
-		$csvFile = $form->getChildByName('csv_file')->value; 
-		$csvData = $form->getChildByName('csv_data')->value; 
-		
+		$csvFile = $form->getChildByName('csv_file')->value;
+		$csvData = $form->getChildByName('csv_data')->value;
+
 		$csvBasename = 'data-' . $this->user->id . '.csv';
 		$csvFilename = $this->page->filesManager()->path() . $csvBasename;
 
 		if(count($csvFile)) {
 			$csvFile = $csvFile->first();
 			$csvFile->rename($csvBasename);
-			$csvFilename = $csvFile->filename; 
+			$csvFilename = $csvFile->filename;
 
 		} else if(strlen($csvData)) {
-			file_put_contents($csvFilename, $csvData); 
+			file_put_contents($csvFilename, $csvData);
 			$this->wire('files')->chmod($csvFilename);
 
 		} else {
@@ -340,59 +349,59 @@ class ImportPagesCSV extends Process implements Module {
 		}
 
 		if(!$csvFilename || !is_file($csvFilename)) {
-			$this->error("Missing required CSV file/data"); 
+			$this->error("Missing required CSV file/data");
 			return false;
 		}
 
 		$this->sessionSet('csvFilename', $csvFilename);
-		
-		return true; 
+
+		return true;
 	}
 
 	/**
 	 * Build the "Step 2" form to connect the fields
-	 * 
+	 *
 	 * @return InputfieldForm
 	 *
 	 */
 	protected function buildForm2() {
 
 		/** @var InputfieldForm $form */
-		$form = $this->modules->get("InputfieldForm"); 
-		$form->description = "Step 2: Connect the fields"; 
-		$form->value = "<p>" . 
-			"Below is a list of columns found in in the header of your CSV file. " . 
-			"For each of them, select the field it should import to. " . 
-			"Leave any fields you want to exclude blank. " . 
-			"Once finished, click “Start Import” at the bottom of this page. " . 
-			"Note: any field names in your CSV file that match those in your site " . 
-			"will be automatically selected." . 
+		$form = $this->modules->get("InputfieldForm");
+		$form->description = "Step 2: Connect the fields";
+		$form->value = "<p>" .
+			"Below is a list of columns found in in the header of your CSV file. " .
+			"For each of them, select the field it should import to. " .
+			"Leave any fields you want to exclude blank. " .
+			"Once finished, click “Start Import” at the bottom of this page. " .
+			"Note: any field names in your CSV file that match those in your site " .
+			"will be automatically selected." .
 			"</p>";
 
-		$fp = fopen($this->csvFilename, "r"); 
-		if($fp === false) throw new WireException("Unable to open CSV file"); 
-		
-		$data = fgetcsv($fp, 0, $this->sessionGet('csvDelimeter'), $this->sessionGet('csvEnclosure'));
+		$fp = fopen($this->csvFilename, "r");
+		if($fp === false) throw new WireException("Unable to open CSV file");
+
+		$data = fgetcsv($fp, 0, $this->sessionGet('csvDelimiter'), $this->sessionGet('csvEnclosure'));
 
 		foreach($data as $key => $value) {
 
 			/** @var InputfieldSelect $f */
-			$f = $this->modules->get('InputfieldSelect'); 
+			$f = $this->modules->get('InputfieldSelect');
 			$f->name = "csv" . $key;
-			$f->label = $value; 
-			$f->addOption(''); 
+			$f->label = $value;
+			$f->addOption('');
 
 			foreach($this->template->fieldgroup as $field) {
 				if(!$this->isAllowedField($field)) continue;
-				$label = "$field->name – $field->label (" . $field->type->shortName . ")"; 
-				$f->addOption($field->name, $label); 
-				if($field->name == $value) $f->attr('value', $field->name); 
+				$label = "$field->name – $field->label (" . $field->type->shortName . ")";
+				$f->addOption($field->name, $label);
+				if($field->name == $value) $f->attr('value', $field->name);
 			}
 
 			$form->add($f);
 		}
 
-		fclose($fp); 
+		fclose($fp);
 
 		$this->addSubmit($form, 'Start Import');
 
@@ -401,99 +410,99 @@ class ImportPagesCSV extends Process implements Module {
 
 	/**
 	 * Process the "Step 2" form and perform the import
-	 * 
+	 *
 	 * @param InputfieldForm $form
 	 * @return string
 	 *
 	 */
 	protected function processForm2(InputfieldForm $form) {
 
-		$form->processInput($this->input->post); 
-		
+		$form->processInput($this->input->post);
+
 		$csvFilename = $this->csvFilename;
-		$fp = fopen($csvFilename, "r"); 
+		$fp = fopen($csvFilename, "r");
 		if($fp === false) throw new WireException('Unable to open CSV file');
-		
+
 		$numImported = 0;
 		$rowNum = 0;
-		$maxRows = $this->sessionGet('csvMaxRows'); 
-		$csvDelimeter = $this->sessionGet('csvDelimeter', ',');
+		$maxRows = $this->sessionGet('csvMaxRows');
+		$csvDelimiter = $this->sessionGet('csvDelimiter', ',');
 		$csvEnclosure = $this->sessionGet('csvEnclosure', '"');
 
-		while(($data = fgetcsv($fp, 0, $csvDelimeter, $csvEnclosure)) !== false) {
-			$cnt = count($data); 
+		while(($data = fgetcsv($fp, 0, $csvDelimiter, $csvEnclosure)) !== false) {
+			$cnt = count($data);
 
 			// skip blank lines
 			if(!$cnt || ($cnt == 1 && empty($data[0]))) continue;
-			
+
 			$rowNum++;
-			
+
 			// only start importing on second line (if $n)
 			if($rowNum > 1 && $this->importPage($data, $form)) {
 				$numImported++;
 			}
-			
+
 			if($maxRows && $rowNum > $maxRows) break;
 		}
 
-		fclose($fp); 
-		
-		$this->wire('files')->unlink($csvFilename); 
-		
-		return $this->processForm2Markup($numImported); 
+		fclose($fp);
+
+		$this->wire('files')->unlink($csvFilename);
+
+		return $this->processForm2Markup($numImported);
 	}
 
 	/**
 	 * Provide the completion output markup for processForm2
-	 * 
+	 *
 	 * @param int $numImported
 	 * @return string
 	 *
 	 */
 	protected function processForm2Markup($numImported) {
-		return 	
-			"<h2>Imported $numImported pages</h2>" . 
-			"<p><a href='{$this->config->urls->admin}page/list/?open={$this->parent->id}'>See the imported pages</a></p>" . 
+		return
+			"<h2>Imported $numImported pages</h2>" .
+			"<p><a href='{$this->config->urls->admin}page/list/?open={$this->parent->id}'>See the imported pages</a></p>" .
 			"<p><a href='../'>Import more pages</a></p>";
 	}
 
 	/**
 	 * Import a single page
-	 * 
+	 *
 	 * @param array $data
 	 * @param InputfieldForm $form
 	 * @return bool
 	 *
 	 */
 	protected function importPage(array $data, InputfieldForm $form) {
-		
+
 		$page = $this->wire('pages')->newPage(array('template' => $this->template));
-		$page->parent = $this->parent; 
+		$page->parent = $this->parent;
 		$page->set('ImportPagesCSVData', array()); // data to set after page is saved
 		$page->setTrackChanges(true);
 		$fieldNames = array();
 
 		foreach($form as $f) {
-			if(!preg_match('/^csv(\d+)$/', $f->name, $matches)) continue; 
-			$key = (int) $matches[1]; 
-			$value = $data[$key]; 
-			$name = $f->value; 
-			if(!$name) continue; 
-			$this->importPageValue($page, $name, $value); 
-			$fieldNames[] = $name; 
-		}	
+			if(!preg_match('/^csv(\d+)$/', $f->name, $matches)) continue;
+			$key = (int) $matches[1];
+			$value = $data[$key];
+			$name = $f->value;
+			if(!$name) continue;
+			$this->importPageValue($page, $name, $value);
+			$fieldNames[] = $name;
+		}
 
 		if(!$page->name) {
 			$this->error(
-				"Unable to import page because it has no required 'title' field or it is blank.<br />" . 
-				"<pre>" . print_r($data, true) . "</pre>", 
+				"Unable to import page because it has no required 'title' field or it is blank.<br />" .
+				"<pre>" . print_r($data, true) . "</pre>",
 				Notice::allowMarkup
 			);
 			return false;
 		}
-		
-		$existingPage = $this->wire('pages')->get("parent_id=$this->parent, name=$page->name"); 
-		
+
+		$existingPage = $this->wire('pages')->get("parent_id=$this->parent, name=$page->name");
+
 		if($existingPage->id) {
 			// existing page
 			if($this->sessionGet('csvDuplicate') == self::csvDuplicateNew) {
@@ -519,12 +528,12 @@ class ImportPagesCSV extends Process implements Module {
 			$page->save();
 		}
 
-		return $page->id > 0; 
+		return $page->id > 0;
 	}
 
 	/**
-	 * Assign a value to a page field 
-	 * 
+	 * Assign a value to a page field
+	 *
 	 * @param Page $page Page being imported to
 	 * @param string $name Field name or page property name
 	 * @param mixed $value Value to set
@@ -533,9 +542,9 @@ class ImportPagesCSV extends Process implements Module {
 	 */
 	protected function ___importPageValue(Page $page, $name, $value) {
 
-		$field = $this->fields->get($name); 
+		$field = $this->fields->get($name);
 		if(!$field) return false;
-		
+
 		if($field->type instanceof FieldtypeFile) {
 
 			$value = trim($value);
@@ -562,16 +571,16 @@ class ImportPagesCSV extends Process implements Module {
 			$page->set($name, $value);
 			if(!$page->name) $page->name = $this->sanitizer->pageName($value, Sanitizer::translate);
 
-		} else { 
-			$page->set($name, $value); 
+		} else {
+			$page->set($name, $value);
 		}
-		
+
 		return true;
 	}
 
 	/**
 	 * Modify an existing page with CSV data
-	 * 
+	 *
 	 * @param Page $existingPage
 	 * @param Page $newPage
 	 * @param array $fieldNames
@@ -581,30 +590,30 @@ class ImportPagesCSV extends Process implements Module {
 	protected function modifyPage(Page $existingPage, Page $newPage, array $fieldNames) {
 
 		if($existingPage->template->id != $newPage->template->id) {
-			$this->error("Unable to modify '$existingPage->name' because it uses a different template '$existingPage->template'"); 
+			$this->error("Unable to modify '$existingPage->name' because it uses a different template '$existingPage->template'");
 			return false;
 		}
-	
+
 		/** @var array $data */
-		$data = $newPage->get('ImportPagesCSVData'); 
+		$data = $newPage->get('ImportPagesCSVData');
 
 		foreach($fieldNames as $fieldName) {
 			if(isset($data[$fieldName])) {
-				$value = $data[$fieldName]; 
+				$value = $data[$fieldName];
 			} else {
-				$value = $newPage->get($fieldName); 
+				$value = $newPage->get($fieldName);
 			}
-		
-			$field = $this->wire('fields')->get($fieldName); 
-			$existingValue = $existingPage->get($fieldName); 
-			$existingPage->set($fieldName, $value); 
-			
+
+			$field = $this->wire('fields')->get($fieldName);
+			$existingValue = $existingPage->get($fieldName);
+			$existingPage->set($fieldName, $value);
+
 			if($field->type instanceof FieldtypePage) {
 				if(((string) $existingValue) === ((string) $newPage->get($fieldName))) {
-					$existingPage->untrackChange($fieldName); 
+					$existingPage->untrackChange($fieldName);
 				}
 			}
-			
+
 		}
 
 		return $this->savePage($existingPage);
@@ -612,7 +621,7 @@ class ImportPagesCSV extends Process implements Module {
 
 	/**
 	 * Wrapper to PW's page save to capture exceptions so importPage can try name variations if necessary
-	 * 
+	 *
 	 * @param Page $page
 	 * @param bool $reportErrors
 	 * @return Page
@@ -627,21 +636,21 @@ class ImportPagesCSV extends Process implements Module {
 				$changes = "($changes)";
 				$page->save();
 				$this->message("$label $page->path $changes");
-				$page->setQuietly('_csvSaved', true); 
+				$page->setQuietly('_csvSaved', true);
 			} else {
-				$page->setQuietly('_csvSaved', false); 
+				$page->setQuietly('_csvSaved', false);
 			}
 
 		} catch(\Exception $e) {
-			if($reportErrors) $this->error($e->getMessage()); 
+			if($reportErrors) $this->error($e->getMessage());
 		}
 
-		return $page; 
+		return $page;
 	}
 
 	/**
-	 * Given a page name, check that it is unique and return it or a unique numbered variation of it 
-	 * 
+	 * Given a page name, check that it is unique and return it or a unique numbered variation of it
+	 *
 	 * @param string $pageName
 	 * @return string
 	 *
@@ -649,10 +658,10 @@ class ImportPagesCSV extends Process implements Module {
 	protected function getUniquePageName($pageName) {
 
 		return $this->wire('pages')->names()->uniquePageName(array(
-			'name' => $pageName, 
+			'name' => $pageName,
 			'parent' => $this->parent
 		));
-	
+
 		/*
 		 * Original method for reference
 		$n = 0;
@@ -660,32 +669,32 @@ class ImportPagesCSV extends Process implements Module {
 			$testName = $pageName . "-" . (++$n);
 			$test = $this->parent->child("name=$testName, include=all");
 			if(!$test->id) break;
-		} while(1); 
-		return $testName; 
+		} while(1);
+		return $testName;
 		*/
 	}
 
 	/**
 	 * Add a submit button, moved to a function so we don't have to do this twice
-	 * 
+	 *
 	 * @param InputfieldForm $form
 	 * @param string $value
 	 *
 	 */
 	protected function addSubmit(InputfieldForm $form, $value = 'Submit') {
 		/** @var InputfieldSubmit $f */
-		$f = $this->modules->get("InputfieldSubmit"); 
+		$f = $this->modules->get("InputfieldSubmit");
 		$f->name = 'submit';
-		$f->value = $value; 
-		$form->add($f); 
+		$f->value = $value;
+		$form->add($f);
 	}
 
 	/**
 	 * Is given Field allowed for importing?
-	 * 
+	 *
 	 * @param Field $field
 	 * @return bool
-	 * 
+	 *
 	 */
 	protected function ___isAllowedField(Field $field) {
 		$valid = false;
@@ -697,12 +706,12 @@ class ImportPagesCSV extends Process implements Module {
 	}
 
 	/**
-	 * Get session value 
-	 * 
+	 * Get session value
+	 *
 	 * @param string $key
 	 * @param null $fallback
 	 * @return string|int|null
-	 * 
+	 *
 	 */
 	protected function sessionGet($key, $fallback = null) {
 		$value = $this->session->getFor($this, $key);
@@ -711,11 +720,11 @@ class ImportPagesCSV extends Process implements Module {
 	}
 
 	/**
-	 * Set session value 
-	 * 
+	 * Set session value
+	 *
 	 * @param string $key
 	 * @param string|int $value
-	 * 
+	 *
 	 */
 	protected function sessionSet($key, $value) {
 		$this->session->setFor($this, $key, $value);
